@@ -7,6 +7,10 @@ def main do
             puts value * 2
         end;
 
+        if value > 10 do
+          puts value;
+          puts 10
+        end;
         puts value
     end
 end

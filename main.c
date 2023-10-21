@@ -404,6 +404,53 @@ void parser_parse_expression(Parser* parser) {
     }
 }
 
+void parser_parse_if_stmt(Parser* parser) {
+    parser_parse_booleanexpr(parser);
+    parser_parse_block(parser);
+
+    Token t = parser_peek_next_token(parser);
+    if (t.type == KEYWORD && strcmp(t.str_value, "else") == 0) {
+        parser_get_next_token(parser); // consume the else keyword
+        parser_parse_block(parser);
+    }
+}
+
+void parser_parse_while_stmt(Parser* parser) {
+    parser_parse_booleanexpr(parser);
+    parser_parse_block(parser);
+}
+
+void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value) {
+    if (strcmp(token_str_value, "if") == 0) {
+        parser_parse_if_stmt(parser);
+    } else if (strcmp(token_str_value, "while") == 0) {
+        parser_parse_while_stmt(parser);
+    }
+}
+
+void parser_parse_variable_assign(Parser* parser) {
+    Token t = parser_get_next_token(parser);
+    if (t.type != ASSIGN_OPERATOR) {
+        fprintf(stderr, "[SYNTAX_ERROR] Expected assign operator (=), but got '%s'.\n", t.str_value);
+        exit(1);
+    }
+    parser_parse_expression(parser);
+}
+
+void parser_parse_blockless_stmt(Parser* parser, const Token* current_token) {
+    if (current_token->type == IDENT) {
+        parser_parse_variable_assign(parser);
+    } else if (current_token->type == KEYWORD && strcmp(current_token->str_value, "puts") == 0) {
+        parser_parse_expression(parser);
+    } else if (current_token->type == KEYWORD && strcmp(current_token->str_value, "reads") == 0) {
+        Token t = parser_get_next_token(parser);
+        if (t.type != IDENT) {
+            fprintf(stderr, "[SYNTAX_ERROR] expected identifier to follow a 'reads' call, but found %s.\n", t.str_value);
+            exit(1);
+        }
+    }
+}
+
 void parser_parse_stmt(Parser* parser) {
     Token t = parser_get_next_token(parser);
 
@@ -412,33 +459,11 @@ void parser_parse_stmt(Parser* parser) {
         exit(1);
     }
 
-    if (t.type == IDENT) {
-        t = parser_get_next_token(parser);
-        if (t.type != ASSIGN_OPERATOR) {
-            fprintf(stderr, "[SYNTAX_ERROR] Expected assign operator (=), but got '%s'.\n", t.str_value);
-            exit(1);
-        }
-        parser_parse_expression(parser);
-    } else if (t.type == KEYWORD && strcmp(t.str_value, "if") == 0) {
-        parser_parse_booleanexpr(parser);
-        parser_parse_block(parser);
-
-        t = parser_peek_next_token(parser);
-        if (t.type == KEYWORD && strcmp(t.str_value, "else") == 0) {
-            parser_get_next_token(parser); // consume the else keyword
-            parser_parse_block(parser);
-        }
-    } else if (t.type == KEYWORD && strcmp(t.str_value, "while") == 0) {
-        parser_parse_booleanexpr(parser);
-        parser_parse_block(parser);
-    } else if (t.type == KEYWORD && strcmp(t.str_value, "puts") == 0) {
-        parser_parse_expression(parser);
-    } else if (t.type == KEYWORD && strcmp(t.str_value, "reads") == 0) {
-        t = parser_get_next_token(parser);
-        if (t.type != IDENT) {
-            fprintf(stderr, "[SYNTAX_ERROR] expected identifier to follow a 'reads' call, but found %s.\n", t.str_value);
-            exit(1);
-        }
+    // move this check to something like `is_blockless_stmt_keyword`
+    if (t.type == IDENT || (t.type == KEYWORD && strcmp(t.str_value, "puts") == 0) || (t.type == KEYWORD && strcmp(t.str_value, "reads") == 0)) {
+        parser_parse_blockless_stmt(parser, &t);
+    } else if (t.type == KEYWORD && (strcmp(t.str_value, "if") == 0 || strcmp(t.str_value, "while") == 0)) { // move this check to something like `is_blocked_stmt_keyword`
+        parser_parse_blocked_stmt(parser, t.str_value);
     }
 }
 
