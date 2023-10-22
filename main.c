@@ -309,12 +309,23 @@ typedef struct {
     size_t idx;
 } Parser;
 
+typedef enum {
+    STMT_BLOCKLESS,
+    STMT_BLOCKED,
+    NOT_A_STMT
+} STMT_TYPE;
+
 void parser_parse_boolean(Parser* parser);
 void parser_parse_booleanexpr(Parser* parser);
 void parser_parse_operand(Parser* parser);
 void parser_parse_computation(Parser* parser);
 void parser_parse_expression(Parser* parser);
-void parser_parse_stmt(Parser* parser);
+void parser_parse_variable_assign(Parser* parser);
+void parser_parse_if_stmt(Parser* parser);
+void parser_parse_while_stmt(Parser* parser);
+void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value);
+void parser_parse_blockless_stmt(Parser* parser, const Token* current_token);
+STMT_TYPE parser_parse_stmt(Parser* parser);
 void parser_parse_block(Parser* parser);
 void parser_parse_z(Parser* parser);
 
@@ -449,10 +460,15 @@ void parser_parse_blockless_stmt(Parser* parser, const Token* current_token) {
             exit(1);
         }
     }
+
+    Token t = parser_peek_next_token(parser);
+    if (t.type == SEMI) {
+        parser_get_next_token(parser); // consume the semi token
+    }
 }
 
-void parser_parse_stmt(Parser* parser) {
-    Token t = parser_get_next_token(parser);
+STMT_TYPE parser_parse_stmt(Parser* parser) {
+    Token t = parser_peek_next_token(parser);
 
     if (t.type != IDENT && (t.type != KEYWORD && strcmp(t.str_value, "if") != 0) && strcmp(t.str_value, "while") != 0) {
         fprintf(stderr, "[SYNTAX_ERROR] Unexpected syntax for statement. Expected 'assignement, if, while, ..., but got '%s'.\n", t.str_value);
@@ -461,10 +477,16 @@ void parser_parse_stmt(Parser* parser) {
 
     // move this check to something like `is_blockless_stmt_keyword`
     if (t.type == IDENT || (t.type == KEYWORD && strcmp(t.str_value, "puts") == 0) || (t.type == KEYWORD && strcmp(t.str_value, "reads") == 0)) {
+        parser_get_next_token(parser); // the token needs to be consumed only if it is a valid stmt token
         parser_parse_blockless_stmt(parser, &t);
+        return STMT_BLOCKLESS;
     } else if (t.type == KEYWORD && (strcmp(t.str_value, "if") == 0 || strcmp(t.str_value, "while") == 0)) { // move this check to something like `is_blocked_stmt_keyword`
+        parser_get_next_token(parser); // the token needs to be consumed only if it is a valid stmt token
         parser_parse_blocked_stmt(parser, t.str_value);
+        return STMT_BLOCKED;
     }
+
+    return NOT_A_STMT;
 }
 
 void parser_parse_block(Parser* parser) {
@@ -474,13 +496,18 @@ void parser_parse_block(Parser* parser) {
         exit(1);
     }
 
-    parser_parse_stmt(parser);
-    t = parser_peek_next_token(parser);
-    while (t.type == SEMI) {
-        parser_get_next_token(parser); // consume the semi
-        parser_parse_stmt(parser);
-        t = parser_peek_next_token(parser);
-    }
+    STMT_TYPE stmt_parsed_type;
+    do {
+        stmt_parsed_type = parser_parse_stmt(parser);
+    } while (stmt_parsed_type != NOT_A_STMT);
+
+    /* parser_parse_stmt(parser); */
+    /* t = parser_peek_next_token(parser); */
+    /* while (t.type == SEMI) { */
+    /*     parser_get_next_token(parser); // consume the semi */
+    /*     parser_parse_stmt(parser); */
+    /*     t = parser_peek_next_token(parser); */
+    /* } */
 
     t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "end") != 0) {
