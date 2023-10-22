@@ -8,8 +8,8 @@
 #define SOURCE_CODE_MAX_CAP 1024
 #define SOURCE_FILE "examples/main.pp"
 
-#define KEYWORD_COUNT 9
-static const char* KEYWORDS[] = {"def", "main", "do", "end", "if", "else", "while", "puts", "reads"};
+#define KEYWORD_COUNT 10
+static const char* KEYWORDS[] = {"def", "main", "do", "end", "if", "else", "while", "puts", "reads", "integer"};
 bool is_keyword(const char* word) {
     assert(KEYWORD_COUNT == (sizeof(KEYWORDS) / sizeof(char*)) && "[COMPILER_ERROR]: Excessive number of keywords");
 
@@ -98,6 +98,10 @@ bool is_logic_op(const char op[2]) {
            strcmp(op, "==") == 0;
 } 
 
+bool is_type_annot_prefix(const char c) {
+    return c == ':';
+}
+
 typedef enum {
     UNDEFINED,
     CONST,
@@ -109,6 +113,7 @@ typedef enum {
     DIV_OPERATOR,
     ASSIGN_OPERATOR,
     SEMI,
+    TYPE_ANNOT_PREFIX,
     OPEN_PAREN,
     CLOSING_PAREN,
     GT_OPERATOR,
@@ -141,6 +146,8 @@ const char* get_token_str(TokenType t) {
             return "ASSIGN_OPERATOR";
         case SEMI:
             return "SEMI";
+        case TYPE_ANNOT_PREFIX:
+            return "TYPE_ANNOT_PREFIX";
         case OPEN_PAREN:
             return "OPEN_PAREN";
         case CLOSING_PAREN:
@@ -296,8 +303,13 @@ void gen_tokens(Lexer* lex) {
             strcpy(t.str_value, logic_gate_op);
             lex->tokens[lex->token_size++] = t;
             i++;
+        } else if (is_type_annot_prefix(lex->source_code[i])) {
+            Token t = { .type = TYPE_ANNOT_PREFIX };
+            t.str_value[0] = lex->source_code[i];
+            lex->tokens[lex->token_size++] = t;
+            i++;
         } else {
-            fprintf(stderr, "[LEXICAL ERROR] Wrong symbol.\n");
+            fprintf(stderr, "[LEXICAL ERROR] Wrong symbol '%c'.\n", lex->source_code[i]);
             exit(1);
         }
     }
@@ -441,6 +453,16 @@ void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value) {
 
 void parser_parse_variable_assign(Parser* parser) {
     Token t = parser_get_next_token(parser);
+
+    if (t.type == TYPE_ANNOT_PREFIX) {
+        t = parser_get_next_token(parser);
+        if (t.type != KEYWORD && strcmp(t.str_value, "integer") != 0) {
+            fprintf(stderr, "[SYNTAX_ERROR] Expected type after type anotation prefix (:), but got '%s'.\n", t.str_value);
+            exit(1);
+        }
+        t = parser_get_next_token(parser);
+    }
+
     if (t.type != ASSIGN_OPERATOR) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected assign operator (=), but got '%s'.\n", t.str_value);
         exit(1);
@@ -500,14 +522,6 @@ void parser_parse_block(Parser* parser) {
     do {
         stmt_parsed_type = parser_parse_stmt(parser);
     } while (stmt_parsed_type != NOT_A_STMT);
-
-    /* parser_parse_stmt(parser); */
-    /* t = parser_peek_next_token(parser); */
-    /* while (t.type == SEMI) { */
-    /*     parser_get_next_token(parser); // consume the semi */
-    /*     parser_parse_stmt(parser); */
-    /*     t = parser_peek_next_token(parser); */
-    /* } */
 
     t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "end") != 0) {

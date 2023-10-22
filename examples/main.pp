@@ -1,5 +1,5 @@
 def main do
-    value = 10;
+    value: integer = 10;
     while value > 0 do
         if value < 5 do
             puts value + 1;

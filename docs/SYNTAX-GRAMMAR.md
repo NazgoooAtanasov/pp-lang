@@ -16,7 +16,9 @@ $$if\_stmt \to \text{if } booleanexpr \space block \space [\text{else } block] $
 
 $$while\_stmt \to  \text{while } booleanexpr \space block $$
 
-$$ variable\_assign \to  \text{ident} \ = \ expression $$
+$$ variable\_assign \to  \text{ident} \ [type\_annot] \ = \ expression $$
+
+$$ type\_anot \to \ \text{: integer} $$
 
 $$expression \to computation \space \{ \text{*|/} \space computation \}$$
 
