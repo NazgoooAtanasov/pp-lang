@@ -228,6 +228,7 @@ ast_block* parser_parse_block(Parser* parser) {
 }
 
 ast_fun_def* parser_parse_z(Parser* parser) {
+    ast_fun_def* fun_def = malloc(sizeof(ast_fun_def));
     Token t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "def") != 0) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected keyword 'def' for function definition, but got '%s'.\n", t.str_value);
@@ -240,7 +241,7 @@ ast_fun_def* parser_parse_z(Parser* parser) {
         exit(1);
     }
 
-    ast_fun_def* fun_def = malloc(sizeof(ast_fun_def));
+    strcpy(fun_def->name, t.str_value);
     ast_block* block = parser_parse_block(parser);
     fun_def->block = block;
     return fun_def;

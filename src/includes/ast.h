@@ -50,10 +50,12 @@ typedef struct _ast_block {
 } ast_block;
 
 typedef struct {
+    char name[256];
     ast_block* block;
 } ast_fun_def;
 
 ast_expression* build_expression_node(const char* expr_str, size_t sz);
 void print_expression_node(ast_expression* node, int offset);
+void ast_print_tree(ast_fun_def* fun, int offset);
 
 #endif // PP_LANG_AST_

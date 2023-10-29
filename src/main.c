@@ -39,9 +39,11 @@ int main(void) {
     parser_create(&parser, lex.tokens, lex.token_size);
     ast_fun_def* fun = parser_parse_z(&parser);
 
-    for (size_t i = 0; i < lex.token_size; ++i) {
-        printf("[TOKEN] %s %s\n", get_token_str(lex.tokens[i].type), lex.tokens[i].str_value);
-    }
+    ast_print_tree(fun, 1);
+
+    /* for (size_t i = 0; i < lex.token_size; ++i) { */
+    /*     printf("[TOKEN] %s %s\n", get_token_str(lex.tokens[i].type), lex.tokens[i].str_value); */
+    /* } */
 
     return 0;
 }
