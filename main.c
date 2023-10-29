@@ -332,14 +332,39 @@ void parser_parse_booleanexpr(Parser* parser);
 void parser_parse_operand(Parser* parser);
 void parser_parse_computation(Parser* parser);
 void parser_parse_expression(Parser* parser);
-void parser_parse_variable_assign(Parser* parser);
+
+typedef struct {
+    char ident[256];
+    void* value;
+} ast_variable_assign;
+ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token);
+
 void parser_parse_if_stmt(Parser* parser);
 void parser_parse_while_stmt(Parser* parser);
 void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value);
-void parser_parse_blockless_stmt(Parser* parser, const Token* current_token);
-STMT_TYPE parser_parse_stmt(Parser* parser);
-void parser_parse_block(Parser* parser);
-void parser_parse_z(Parser* parser);
+
+typedef struct {
+    ast_variable_assign* variable_assign;
+} ast_blockless_stmt;
+ast_blockless_stmt* parser_parse_blockless_stmt(Parser* parser, const Token* current_token);
+
+struct _ast_stmt {
+    struct _ast_stmt* next;
+    ast_blockless_stmt* blockless;
+    /* ast_blocked_stmt* blocked; */
+};
+typedef struct _ast_stmt ast_stmt;
+ast_stmt* parser_parse_stmt(Parser* parser);
+
+typedef struct {
+    ast_stmt* statements;
+} ast_block;
+ast_block* parser_parse_block(Parser* parser);
+
+typedef struct {
+    ast_block* block;
+} ast_fun_def;
+ast_fun_def* parser_parse_z(Parser* parser);
 
 void parser_create(Parser* parser, Token* tokens, size_t size) {
     parser->tokens = tokens;
@@ -451,7 +476,7 @@ void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value) {
     }
 }
 
-void parser_parse_variable_assign(Parser* parser) {
+ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token) {
     Token t = parser_get_next_token(parser);
 
     if (t.type == TYPE_ANNOT_PREFIX) {
@@ -467,12 +492,19 @@ void parser_parse_variable_assign(Parser* parser) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected assign operator (=), but got '%s'.\n", t.str_value);
         exit(1);
     }
+
+    ast_variable_assign* variable_assign = malloc(sizeof(ast_variable_assign));
+    strcpy(variable_assign->ident, current_token->str_value);
     parser_parse_expression(parser);
+    return variable_assign;
 }
 
-void parser_parse_blockless_stmt(Parser* parser, const Token* current_token) {
+ast_blockless_stmt* parser_parse_blockless_stmt(Parser* parser, const Token* current_token) {
+    ast_blockless_stmt* blockless_stmt = malloc(sizeof(ast_blockless_stmt));
+
     if (current_token->type == IDENT) {
-        parser_parse_variable_assign(parser);
+        ast_variable_assign* variable_assign = parser_parse_variable_assign(parser, current_token);
+        blockless_stmt->variable_assign = variable_assign;
     } else if (current_token->type == KEYWORD && strcmp(current_token->str_value, "puts") == 0) {
         parser_parse_expression(parser);
     } else if (current_token->type == KEYWORD && strcmp(current_token->str_value, "reads") == 0) {
@@ -487,9 +519,11 @@ void parser_parse_blockless_stmt(Parser* parser, const Token* current_token) {
     if (t.type == SEMI) {
         parser_get_next_token(parser); // consume the semi token
     }
+
+    return blockless_stmt;
 }
 
-STMT_TYPE parser_parse_stmt(Parser* parser) {
+ast_stmt* parser_parse_stmt(Parser* parser) {
     Token t = parser_peek_next_token(parser);
 
     if (t.type != IDENT && (t.type != KEYWORD && strcmp(t.str_value, "if") != 0) && strcmp(t.str_value, "while") != 0) {
@@ -497,40 +531,59 @@ STMT_TYPE parser_parse_stmt(Parser* parser) {
         exit(1);
     }
 
+    ast_stmt* stmt = malloc(sizeof(ast_stmt));
+    stmt->next = NULL;
+
     // move this check to something like `is_blockless_stmt_keyword`
     if (t.type == IDENT || (t.type == KEYWORD && strcmp(t.str_value, "puts") == 0) || (t.type == KEYWORD && strcmp(t.str_value, "reads") == 0)) {
         parser_get_next_token(parser); // the token needs to be consumed only if it is a valid stmt token
-        parser_parse_blockless_stmt(parser, &t);
-        return STMT_BLOCKLESS;
+        ast_blockless_stmt* blockless_stmt = parser_parse_blockless_stmt(parser, &t);
+        stmt->blockless = blockless_stmt;
+        return stmt;
     } else if (t.type == KEYWORD && (strcmp(t.str_value, "if") == 0 || strcmp(t.str_value, "while") == 0)) { // move this check to something like `is_blocked_stmt_keyword`
         parser_get_next_token(parser); // the token needs to be consumed only if it is a valid stmt token
         parser_parse_blocked_stmt(parser, t.str_value);
-        return STMT_BLOCKED;
+        assert(true && "Attaching blocked stmts is not implemented yet.");
+        return stmt;
     }
 
-    return NOT_A_STMT;
+    return NULL;
 }
 
-void parser_parse_block(Parser* parser) {
+ast_block* parser_parse_block(Parser* parser) {
     Token t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "do") != 0) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected keyword 'do' to define the start of the function, but got '%s'.\n", t.str_value);
         exit(1);
     }
 
-    STMT_TYPE stmt_parsed_type;
+    ast_block* block = malloc(sizeof(ast_block));
+    block->statements = NULL;
+    ast_stmt* parsed_stmt;
     do {
-        stmt_parsed_type = parser_parse_stmt(parser);
-    } while (stmt_parsed_type != NOT_A_STMT);
+        parsed_stmt = parser_parse_stmt(parser);
+
+        if (block->statements == NULL) {
+            block->statements = parsed_stmt;
+        } else {
+            ast_stmt* s = block->statements;
+            while (s->next != NULL) {
+                s = s->next;
+            }
+            s->next = parsed_stmt;
+        }
+    } while (parsed_stmt != NULL);
 
     t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "end") != 0) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected keyword 'end' to define the end of the function, but got '%s'.\n", t.str_value);
         exit(1);
     }
+
+    return block;
 }
 
-void parser_parse_z(Parser* parser) {
+ast_fun_def* parser_parse_z(Parser* parser) {
     Token t = parser_get_next_token(parser);
     if (t.type != KEYWORD || strcmp(t.str_value, "def") != 0) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected keyword 'def' for function definition, but got '%s'.\n", t.str_value);
@@ -543,7 +596,10 @@ void parser_parse_z(Parser* parser) {
         exit(1);
     }
 
-    parser_parse_block(parser);
+    ast_fun_def* fun_def = malloc(sizeof(ast_fun_def));
+    ast_block* block = parser_parse_block(parser);
+    fun_def->block = block;
+    return fun_def;
 }
 
 int main(void) {
@@ -571,7 +627,7 @@ int main(void) {
 
     Parser parser;
     parser_create(&parser, lex.tokens, lex.token_size);
-    parser_parse_z(&parser);
+    ast_fun_def* fun = parser_parse_z(&parser);
 
     for (size_t i = 0; i < lex.token_size; ++i) {
         printf("[TOKEN] %s %s\n", get_token_str(lex.tokens[i].type), lex.tokens[i].str_value);
