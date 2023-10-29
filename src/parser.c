@@ -1,4 +1,5 @@
 #include "includes/parser.h"
+
 void parser_create(Parser* parser, Token* tokens, size_t size) {
     parser->tokens = tokens;
     parser->token_count = size;
@@ -43,11 +44,14 @@ void parser_parse_booleanexpr(Parser* parser) {
     }
 }
 
-void parser_parse_operand(Parser* parser) {
+void parser_parse_operand(Parser* parser, StringBuilder* sb) {
     Token t = parser_get_next_token(parser);
     if (t.type != IDENT && t.type != CONST && t.type != OPEN_PAREN) {
         fprintf(stderr, "[SYNTAX_ERROR] Expected identifier or constant in computation, but got '%s'.\n", t.str_value);
         exit(1);
+    } else {
+        size_t len = strlen(t.str_value);
+        sb_append(sb, t.str_value, len);
     }
 
     if (t.type == OPEN_PAREN) {
@@ -61,28 +65,24 @@ void parser_parse_operand(Parser* parser) {
     }
 }
 
-void parser_parse_computation(Parser* parser) {
-    parser_parse_operand(parser);
+ast_expression* parser_parse_expression(Parser* parser) {
+    StringBuilder sb;
+    sb_initialize(&sb, 10);
+    parser_parse_operand(parser, &sb);
 
     Token t = parser_peek_next_token(parser);
-    while(t.type == ADD_OPERATOR || t.type == SUBT_OPERATOR) {
-        parser_get_next_token(parser); // consume the math operator
-        parser_parse_operand(parser);
+    while(t.type == MULT_OPERATOR || t.type == DIV_OPERATOR || t.type == ADD_OPERATOR || t.type == SUBT_OPERATOR) {
+        t = parser_get_next_token(parser);
+        size_t len = strlen(t.str_value);
+        sb_append(&sb, t.str_value, len);
 
+        parser_parse_operand(parser, &sb);
         t = parser_peek_next_token(parser);
     }
-}
 
-void parser_parse_expression(Parser* parser) {
-    parser_parse_computation(parser);
-
-    Token t = parser_peek_next_token(parser);
-    while(t.type == MULT_OPERATOR || t.type == DIV_OPERATOR) {
-        parser_get_next_token(parser); // consume the math operator
-        parser_parse_computation(parser);
-
-        t = parser_peek_next_token(parser);
-    }
+    ast_expression* expr = build_expression_node(sb.str, sb.idx);
+    sb_free(&sb);
+    return expr;
 }
 
 void parser_parse_if_stmt(Parser* parser) {
@@ -128,7 +128,7 @@ ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* c
 
     ast_variable_assign* variable_assign = malloc(sizeof(ast_variable_assign));
     strcpy(variable_assign->ident, current_token->str_value);
-    parser_parse_expression(parser);
+    variable_assign->value = parser_parse_expression(parser);
     return variable_assign;
 }
 

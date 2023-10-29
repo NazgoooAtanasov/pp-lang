@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define SB_IMPLEMENTATION
+
 #include "includes/lex.h"
 #include "includes/parser.h"
 

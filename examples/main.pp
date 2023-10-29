@@ -1,3 +1,3 @@
 def main do
-  value = 10 * (10 + 2)
+    value = 5 + 5 * 1 + 9;
 end

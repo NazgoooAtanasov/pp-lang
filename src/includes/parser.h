@@ -3,6 +3,7 @@
 
 #include "lex.h"
 #include "ast.h"
+#include "sb.h"
 
 typedef enum {
     STMT_BLOCKLESS,
@@ -21,9 +22,8 @@ Token parser_peek_next_token(Parser* parser);
 
 void parser_parse_boolean(Parser* parser);
 void parser_parse_booleanexpr(Parser* parser);
-void parser_parse_operand(Parser* parser);
-void parser_parse_computation(Parser* parser);
-void parser_parse_expression(Parser* parser);
+void parser_parse_operand(Parser* parser, StringBuilder* sb);
+ast_expression* parser_parse_expression(Parser* parser);
 ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token);
 void parser_parse_if_stmt(Parser* parser);
 void parser_parse_while_stmt(Parser* parser);

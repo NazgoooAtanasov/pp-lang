@@ -20,9 +20,7 @@ $$ variable\_assign \to  \text{ident} \ [type\_annot] \ = \ expression $$
 
 $$ type\_anot \to \ \text{: integer} $$
 
-$$expression \to computation \space \{ \text{*|/} \space computation \}$$
-
-$$computation \to operand \space \{\text{+|-} \space operand\}$$
+$$expression \to operand \space \{ \text{*|/|+|-} \space operand \}$$
 
 $$operand \to \text{ident | const | } (expression)$$
 
