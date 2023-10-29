@@ -1,0 +1,5 @@
+-Wextra
+-Wall
+-pedantic
+-g
+-Isrc/includes
