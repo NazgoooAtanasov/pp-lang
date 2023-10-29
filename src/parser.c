@@ -1,4 +1,6 @@
 #include "includes/parser.h"
+#include "ast.h"
+#include <stdlib.h>
 
 void parser_create(Parser* parser, Token* tokens, size_t size) {
     parser->tokens = tokens;
@@ -85,28 +87,38 @@ ast_expression* parser_parse_expression(Parser* parser) {
     return expr;
 }
 
-void parser_parse_if_stmt(Parser* parser) {
+ast_if_stmt* parser_parse_if_stmt(Parser* parser) {
+    ast_if_stmt* if_stmt = malloc(sizeof(ast_if_stmt));
+
     parser_parse_booleanexpr(parser);
-    parser_parse_block(parser);
+    if_stmt->main_block = parser_parse_block(parser);
 
     Token t = parser_peek_next_token(parser);
     if (t.type == KEYWORD && strcmp(t.str_value, "else") == 0) {
         parser_get_next_token(parser); // consume the else keyword
-        parser_parse_block(parser);
+        if_stmt->else_block = parser_parse_block(parser);
     }
+
+    return if_stmt;
 }
 
-void parser_parse_while_stmt(Parser* parser) {
+ast_while_stmt* parser_parse_while_stmt(Parser* parser) {
+    ast_while_stmt* while_stmt = malloc(sizeof(ast_while_stmt));
     parser_parse_booleanexpr(parser);
-    parser_parse_block(parser);
+    while_stmt->main_block = parser_parse_block(parser);
+
+    return while_stmt;
 }
 
-void parser_parse_blocked_stmt(Parser* parser, const char* token_str_value) {
+ast_blocked_stmt* parser_parse_blocked_stmt(Parser* parser, const char* token_str_value) {
+    ast_blocked_stmt* blocked = malloc(sizeof(ast_blocked_stmt));
     if (strcmp(token_str_value, "if") == 0) {
-        parser_parse_if_stmt(parser);
+        blocked->if_stmt = parser_parse_if_stmt(parser);
     } else if (strcmp(token_str_value, "while") == 0) {
-        parser_parse_while_stmt(parser);
+        blocked->while_stmt = parser_parse_while_stmt(parser);
     }
+
+    return blocked;
 }
 
 ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token) {
@@ -175,8 +187,7 @@ ast_stmt* parser_parse_stmt(Parser* parser) {
         return stmt;
     } else if (t.type == KEYWORD && (strcmp(t.str_value, "if") == 0 || strcmp(t.str_value, "while") == 0)) { // move this check to something like `is_blocked_stmt_keyword`
         parser_get_next_token(parser); // the token needs to be consumed only if it is a valid stmt token
-        parser_parse_blocked_stmt(parser, t.str_value);
-        assert(true && "Attaching blocked stmts is not implemented yet.");
+        stmt->blocked = parser_parse_blocked_stmt(parser, t.str_value);
         return stmt;
     }
 

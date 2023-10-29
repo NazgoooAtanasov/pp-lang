@@ -16,7 +16,7 @@ ast_expression* build_expression_node(const char* expr_str, size_t sz) {
 
     int sign_idx = last_low_order_sing_idx > -1 ? last_low_order_sing_idx : last_high_order_sing_idx;
 
-    if (sign_idx  > -1) {
+    if (sign_idx > -1) {
         char sub_expr[256];
 
         memset(sub_expr, '\0', 256);
