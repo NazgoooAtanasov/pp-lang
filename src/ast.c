@@ -37,6 +37,15 @@ ast_expression* build_expression_node(const char* expr_str, size_t sz) {
     return new_expr;
 }
 
+const char* ast_get_variable_type(ast_variable_type t) {
+    switch (t) {
+        case AST_VARIABLE_INTEGER:
+            return "INTEGER";
+        default:
+            return "N/A";
+    }
+}
+
 void print_expression_node(ast_expression* node, int offset) {
     if (node->left && node->right) {
         printf("%*cEXPRESSION_NODE:\n", offset, ' ');
@@ -53,7 +62,7 @@ void ast_print_block(ast_block* block, int offset) {
     ast_stmt* stmt = block->statements;
     while (stmt) {
         if (stmt->blockless) {
-            printf("%*cVARIABLE_ASSIGN \"NAME\": %s\n", offset, ' ', stmt->blockless->variable_assign->ident);
+            printf("%*cVARIABLE_ASSIGN \"NAME\": %s, \"TYPE\": %s\n", offset, ' ', stmt->blockless->variable_assign->ident, ast_get_variable_type(stmt->blockless->variable_assign->type));
             print_expression_node(stmt->blockless->variable_assign->value, offset);
         }
 

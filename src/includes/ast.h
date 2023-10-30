@@ -14,9 +14,14 @@ typedef struct _ast_expression {
   char operation;
 } ast_expression;
 
+typedef enum {
+    AST_VARIABLE_INTEGER
+} ast_variable_type;
+
 typedef struct {
     char ident[256];
     ast_expression* value;
+    ast_variable_type type;
 } ast_variable_assign;
 
 typedef struct {

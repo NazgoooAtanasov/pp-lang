@@ -122,6 +122,7 @@ ast_blocked_stmt* parser_parse_blocked_stmt(Parser* parser, const char* token_st
 }
 
 ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token) {
+    ast_variable_assign* variable_assign = malloc(sizeof(ast_variable_assign));
     Token t = parser_get_next_token(parser);
 
     if (t.type == TYPE_ANNOT_PREFIX) {
@@ -130,6 +131,11 @@ ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* c
             fprintf(stderr, "[SYNTAX_ERROR] Expected type after type anotation prefix (:), but got '%s'.\n", t.str_value);
             exit(1);
         }
+
+        if (t.type == KEYWORD && strcmp(t.str_value, "integer") == 0) {
+            variable_assign->type = AST_VARIABLE_INTEGER;
+        }
+
         t = parser_get_next_token(parser);
     }
 
@@ -138,7 +144,6 @@ ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* c
         exit(1);
     }
 
-    ast_variable_assign* variable_assign = malloc(sizeof(ast_variable_assign));
     strcpy(variable_assign->ident, current_token->str_value);
     variable_assign->value = parser_parse_expression(parser);
     return variable_assign;
