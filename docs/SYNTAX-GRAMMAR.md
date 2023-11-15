@@ -16,11 +16,11 @@ $$if\_stmt \to \text{if } booleanexpr \space block \space [\text{else } block] $
 
 $$while\_stmt \to  \text{while } booleanexpr \space block $$
 
-$$ variable\_assign \to  \text{ident} \ = \ expression $$
+$$ variable\_assign \to  \text{ident} \ [type\_annot] \ = \ expression $$
 
-$$expression \to computation \space \{ \text{*|/} \space computation \}$$
+$$ type\_anot \to \ \text{: integer} $$
 
-$$computation \to operand \space \{\text{+|-} \space operand\}$$
+$$expression \to operand \space \{ \text{*|/|+|-} \space operand \}$$
 
 $$operand \to \text{ident | const | } (expression)$$
 

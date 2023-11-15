@@ -1,16 +1,12 @@
 def main do
-    value = 10;
-    while value > 0 do
-        if value < 5 do
-            puts value + 1;
-        end else do
-            puts value * 2;
-        end
+    value = 5 + 5 * 1 + 9;
+    if value > 5 do
+        value2 = 6;
+    end else do
+        value3 = 12;
+    end
 
-        if value > 10 do
-          puts value;
-          puts 10;
-        end
-        puts value;
+    while value do
+        value = value + 1;
     end
 end
