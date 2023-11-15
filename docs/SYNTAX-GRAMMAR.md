@@ -2,28 +2,28 @@
 
 <!-- <img src="syntax.png" /> -->
 <!-- This is the original latex text for the syntax but since github does not preview it correct, we are stuck with images -->
-$$Z \to \text{def main} \space block $$
+$$Z \to \text{def main} ~ block $$
 
-$$block \to \text{do} \ stmt \space \{stmt\} \space \text{end}$$
+$$block \to \text{do} \ stmt ~ \{stmt\} ~ \text{end}$$
 
-$$stmt \to blockless\_stmt  \ | \ blocked\_stmt $$
+$$stmt \to blockless\_stmt  \ \text{\textbar} \ blocked\_stmt $$
 
-$$blocked\_stmt \to \ if\_stmt \ | \ while\_stmt   $$
+$$blocked\_stmt \to \ if\_stmt \ \text{\textbar} \ while\_stmt   $$
 
-$$blockless\_stmt \to variable\_assign \ | \ \text{puts} \ expression \ | \ \text{reads ident} \ [;]$$
+$$blockless\_stmt \to variable\_assign \ \text{\textbar} \ \text{puts} \ expression \ \text{\textbar} \ \text{reads ident} \ [;]$$
 
-$$if\_stmt \to \text{if } booleanexpr \space block \space [\text{else } block] $$
+$$if\_stmt \to \text{if } booleanexpr ~ block ~ [\text{else } block] $$
 
-$$while\_stmt \to  \text{while } booleanexpr \space block $$
+$$while\_stmt \to  \text{while } booleanexpr ~ block $$
 
 $$ variable\_assign \to  \text{ident} \ [type\_annot] \ = \ expression $$
 
 $$ type\_anot \to \ \text{: integer} $$
 
-$$expression \to operand \space \{ \text{*|/|+|-} \space operand \}$$
+$$expression \to operand ~ \{ \text{*\text{\textbar}/\text{\textbar}+\text{\textbar}-} ~ operand \}$$
 
-$$operand \to \text{ident | const | } (expression)$$
+$$operand \to \text{ident \text{\textbar} const \text{\textbar} } (expression)$$
 
-$$boolean \to expression \space [>|<|<=|>=|== expression]$$
+$$boolean \to expression ~ [>\text{\textbar}<\text{\textbar}<=\text{\textbar}>=\text{\textbar}== expression]$$
 
-$$booleanexpr \to boolean \space \{\text{\&\& | || } boolean\}$$
+$$booleanexpr \to boolean ~ \{\text{\&\& \text{\textbar} \text{\textbar}\text{\textbar} } boolean\}$$
