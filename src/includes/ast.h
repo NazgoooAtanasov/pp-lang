@@ -28,6 +28,35 @@ typedef struct {
     ast_variable_assign* variable_assign;
 } ast_blockless_stmt;
 
+typedef enum {
+    NOOP,
+    GREATER_EQ,
+    GREATER,
+    LESS_EQ,
+    LESS,
+    EQUAL
+} ast_boolean_op;
+
+typedef struct {
+    ast_expression* left;
+    ast_expression* right;
+    ast_expression* value;
+    ast_boolean_op op;
+} ast_boolean;
+
+typedef enum {
+    EXPR_NOOP,
+    AND_AND,
+    OR_OR
+} ast_booleanexpr_op;
+
+typedef struct _ast_booleanexpr {
+    struct _ast_booleanexpr* left;
+    struct _ast_booleanexpr* right;
+    ast_booleanexpr_op op;
+    ast_boolean* value;
+} ast_booleanexpr;
+
 typedef struct {
     struct _ast_block* main_block;
     struct _ast_block* else_block;
@@ -60,6 +89,7 @@ typedef struct {
 } ast_fun_def;
 
 ast_expression* build_expression_node(const char* expr_str, size_t sz);
+ast_booleanexpr* build_boolean_expression_node(void** boolean_items, size_t sz);
 void print_expression_node(ast_expression* node, int offset);
 void ast_print_tree(ast_fun_def* fun, int offset);
 

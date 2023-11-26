@@ -20,8 +20,8 @@ void parser_create(Parser* parser, Token* tokens, size_t size);
 Token parser_get_next_token(Parser* parser);
 Token parser_peek_next_token(Parser* parser);
 
-void parser_parse_boolean(Parser* parser);
-void parser_parse_booleanexpr(Parser* parser);
+ast_boolean* parser_parse_boolean(Parser* parser);
+ast_booleanexpr* parser_parse_booleanexpr(Parser* parser);
 void parser_parse_operand(Parser* parser, StringBuilder* sb);
 ast_expression* parser_parse_expression(Parser* parser);
 ast_variable_assign* parser_parse_variable_assign(Parser* parser, const Token* current_token);

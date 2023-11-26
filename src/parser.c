@@ -1,6 +1,7 @@
 #include "includes/parser.h"
 #include "ast.h"
 #include <stdlib.h>
+#include <string.h>
 
 void parser_create(Parser* parser, Token* tokens, size_t size) {
     parser->tokens = tokens;
@@ -24,26 +25,59 @@ Token parser_peek_next_token(Parser* parser) {
     return parser->tokens[parser->idx];
 }
 
-void parser_parse_boolean(Parser* parser) {
-    parser_parse_expression(parser);
+ast_boolean* parser_parse_boolean(Parser* parser) {
+    ast_boolean* boolean = malloc(sizeof(ast_boolean));
+    ast_expression* first_exrp = parser_parse_expression(parser);
 
     Token t = parser_peek_next_token(parser);
     if (t.type == GTE_OPERATOR || t.type == GT_OPERATOR || t.type == LTE_OPERATOR || t.type == LT_OPERATOR || t.type == EQ_OPERATOR) {
-        parser_get_next_token(parser); // consume the logical operator
-        parser_parse_expression(parser);
+        boolean->left = first_exrp;
+
+        t = parser_get_next_token(parser);
+        if (t.type == GTE_OPERATOR) {
+            boolean->op = GREATER_EQ;
+        } else if (t.type == GT_OPERATOR) {
+            boolean->op = GREATER;
+        } else if (t.type == LTE_OPERATOR) {
+            boolean->op = LESS_EQ;
+        } else if (t.type == LT_OPERATOR) {
+            boolean->op = LESS;
+        } else if (t.type == EQ_OPERATOR) {
+            boolean->op = EQUAL;
+        }
+        boolean->right = parser_parse_expression(parser);
+    } else {
+        boolean->value = first_exrp;
     }
+
+    return boolean;
 }
 
-
-void parser_parse_booleanexpr(Parser* parser) {
-    parser_parse_boolean(parser);
+ast_booleanexpr* parser_parse_booleanexpr(Parser* parser) {
+    void** bag = malloc(sizeof(void*) * 40);
+    size_t idx = 0;
+    ast_boolean* boolean = parser_parse_boolean(parser);
+    bag[idx++] = boolean;
 
     Token t = parser_peek_next_token(parser);
     while (t.type == LOGIC_OR || t.type == LOGIC_AND) {
-        parser_get_next_token(parser);
-        parser_parse_boolean(parser);
+        t = parser_get_next_token(parser);
+        Token* interim = malloc(sizeof(Token));
+        memcpy(interim, &t, sizeof(Token));
+        bag[idx++] = interim;
+        boolean = parser_parse_boolean(parser);
+        bag[idx++] = boolean;
         t = parser_peek_next_token(parser);
     }
+
+    ast_booleanexpr* tree = build_boolean_expression_node(bag, idx);
+    for (size_t i = 0; i < idx; ++i) {
+        if (i % 2 != 0) {
+            free(bag[i]);
+        }
+    }
+    free(bag);
+    return tree;
 }
 
 void parser_parse_operand(Parser* parser, StringBuilder* sb) {
@@ -90,7 +124,7 @@ ast_expression* parser_parse_expression(Parser* parser) {
 ast_if_stmt* parser_parse_if_stmt(Parser* parser) {
     ast_if_stmt* if_stmt = malloc(sizeof(ast_if_stmt));
 
-    parser_parse_booleanexpr(parser);
+    if_stmt->boolean_expr = parser_parse_booleanexpr(parser);
     if_stmt->main_block = parser_parse_block(parser);
 
     Token t = parser_peek_next_token(parser);
@@ -104,7 +138,7 @@ ast_if_stmt* parser_parse_if_stmt(Parser* parser) {
 
 ast_while_stmt* parser_parse_while_stmt(Parser* parser) {
     ast_while_stmt* while_stmt = malloc(sizeof(ast_while_stmt));
-    parser_parse_booleanexpr(parser);
+    while_stmt->boolean_expr = parser_parse_booleanexpr(parser);
     while_stmt->main_block = parser_parse_block(parser);
 
     return while_stmt;
