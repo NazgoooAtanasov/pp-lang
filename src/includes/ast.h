@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct _ast_block;
 
@@ -13,6 +14,7 @@ typedef struct _ast_expression {
   struct _ast_expression* right;
   char value[256];
   char operation;
+  bool identifier;
   bool high_expr;
 } ast_expression;
 

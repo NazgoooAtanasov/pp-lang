@@ -1,6 +1,6 @@
 #include "includes/ast.h"
-#include "lex.h"
-#include <stdio.h>
+#include "includes/lex.h"
+#include "includes/lex_utils.h"
 
 ast_expression* build_expression_node(const char* expr_str, size_t sz) {
     ast_expression* new_expr = malloc(sizeof(ast_expression));
@@ -36,6 +36,7 @@ ast_expression* build_expression_node(const char* expr_str, size_t sz) {
             new_expr->high_expr = true;
         }
     } else {
+        new_expr->identifier = is_identifier(expr_str);
         strcpy(new_expr->value, expr_str);
     }
 

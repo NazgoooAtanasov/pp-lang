@@ -1,3 +1,5 @@
 def main do
-    value = 0;
+    six = 6
+    two = 2
+    three = six / two
 end

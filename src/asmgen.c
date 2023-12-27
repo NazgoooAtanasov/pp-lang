@@ -1,5 +1,141 @@
 #include "includes/asmgen.h"
 
+Variable* asmgen_variables_find(Variables* vars, const char* ident) {
+    for (size_t i = 0; i < vars->idx; ++i) {
+        if (strcmp(vars->items[i].ident, ident) == 0) {
+            return &vars->items[i];
+            break;
+        }
+    }
+    return NULL;
+}
+
+inline void asmgen_gen_assign(AsmGen* ag, size_t target_offset, size_t source_offset) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff, 
+        "    mov rax, [rbp-%zu]\n"
+        "    mov [rbp-%zu], eax\n",
+        source_offset,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_assigns(AsmGen* ag, size_t target_offset, const char* source) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(instr_buff, "    mov DWORD [rbp-%zu],%s\n", target_offset, source);
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_add(AsmGen* ag, size_t target_offset, size_t source_offset) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n"
+        "    add eax, [rbp-%zu]\n"
+        "    mov [rbp-%zu], eax\n",
+        target_offset,
+        source_offset,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_adds(AsmGen* ag, size_t target_offset, const char* source) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff, 
+        "    add DWORD [rbp-%zu],%s\n",
+        target_offset,
+        source
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_sub(AsmGen* ag, size_t target_offset, size_t source_offset) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n"
+        "    sub eax, [rbp-%zu]\n"
+        "    mov [rbp-%zu], eax\n",
+        target_offset,
+        source_offset,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_subs(AsmGen* ag, size_t target_offset, const char* source) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff, 
+        "    sub DWORD [rbp-%zu],%s\n", 
+        target_offset, 
+        source
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_mul(AsmGen* ag, size_t target_offset, size_t source_offset) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n" 
+        "    mul DWORD [rbp-%zu]\n"
+        "    mov DWORD [rbp-%zu], eax\n",
+        target_offset,
+        source_offset,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_muls(AsmGen* ag, size_t target_offset, const char* source) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n" 
+        "    mov ebx, %s\n" 
+        "    mul DWORD ebx\n" 
+        "    mov DWORD [rbp-%zu], eax\n",
+        target_offset,
+        source,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_div(AsmGen* ag, size_t target_offset, size_t source_offset) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n" 
+        "    div DWORD [rbp-%zu]\n"
+        "    mov DWORD [rbp-%zu], eax\n",
+        target_offset,
+        source_offset,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
+inline void asmgen_gen_divs(AsmGen* ag, size_t target_offset, const char* source) {
+    char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
+    sprintf(
+        instr_buff,
+        "    mov eax, [rbp-%zu]\n" 
+        "    mov ebx, %s\n" 
+        "    div DWORD ebx\n" 
+        "    mov DWORD [rbp-%zu], eax\n",
+        target_offset,
+        source,
+        target_offset
+    );
+    sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
+}
+
 void asmgen_create(AsmGen* ag) {
     sb_initialize(&ag->asm_source, 1024);
 }
@@ -59,6 +195,10 @@ void asmgen_gen_block(AsmGen* ag, ast_block* block) {
         if (stmt->blockless && stmt->blockless->variable_assign) {
             ast_variable_assign* var_assign = stmt->blockless->variable_assign;
             asmgen_gen_var_assign(ag, var_assign);
+            ag->vars.items[ag->vars.idx++] = (Variable) {
+                .ident = var_assign->ident,
+                .offset = var_assign->offset
+            };
         }
 
         stmt = stmt->next;
@@ -71,53 +211,49 @@ void asmgen_gen_var_assign(AsmGen* ag, ast_variable_assign* var_assign) {
 
 void asmgen_gen_expr_var(AsmGen* ag, ast_variable_assign* var_assign, ast_expression* expr, char math_op) {
     if (expr->left == NULL && expr->right == NULL) {
-        char instr_buff[1024]; // @INFO: this has been hardcoded because i was lazy to do it otherwise.
         if (var_assign->assigned == false) {
-            sprintf(instr_buff, "    mov DWORD [rbp-%zu],%s\n", var_assign->offset * 4, expr->value);
+            if (expr->identifier) {
+                // the var should never be NULL here. there will be a semantic checks and type checks in the futuire to guarentee that. 
+                Variable* var = asmgen_variables_find(&ag->vars, expr->value);
+                asmgen_gen_assign(ag, var_assign->offset * 4, var->offset * 4);
+            } else {
+                asmgen_gen_assigns(ag, var_assign->offset * 4, expr->value);
+            }
             var_assign->assigned = true;
         } else {
             if (math_op == '+') {
-                sprintf(
-                    instr_buff, 
-                    "    add DWORD [rbp-%zu],%s\n",
-                    var_assign->offset * 4,
-                    expr->value
-                );
+                if (expr->identifier) {
+                    Variable* var = asmgen_variables_find(&ag->vars, expr->value);
+                    asmgen_gen_add(ag, var_assign->offset * 4, var->offset * 4);
+                } else {
+                    asmgen_gen_adds(ag, var_assign->offset * 4, expr->value);
+                }
             } else if (math_op == '-') {
-                sprintf(
-                    instr_buff, 
-                    "    sub DWORD [rbp-%zu],%s\n", 
-                    var_assign->offset * 4, 
-                    expr->value
-                );
+                if (expr->identifier) {
+                    Variable* var = asmgen_variables_find(&ag->vars, expr->value);
+                    asmgen_gen_sub(ag, var_assign->offset * 4, var->offset * 4);
+                } else {
+                    asmgen_gen_subs(ag, var_assign->offset * 4, expr->value);
+                }
             } else if (math_op == '*') {
-                sprintf(
-                    instr_buff,
-                    "    mov eax, [rbp-%zu]\n" 
-                    "    mov ebx, %s\n" 
-                    "    mul DWORD ebx\n" 
-                    "    mov DWORD [rbp-%zu], eax\n",
-                    var_assign->offset * 4,
-                    expr->value,
-                    var_assign->offset * 4
-                );
+                if (expr->identifier) {
+                    Variable* var = asmgen_variables_find(&ag->vars, expr->value);
+                    asmgen_gen_mul(ag, var_assign->offset * 4, var->offset * 4);
+                } else {
+                    asmgen_gen_muls(ag, var_assign->offset * 4, expr->value);
+                }
             } else if (math_op == '/') {
-                sprintf(
-                    instr_buff,
-                    "    mov eax, [rbp-%zu]\n" 
-                    "    mov ebx, %s\n" 
-                    "    div DWORD ebx\n" 
-                    "    mov DWORD [rbp-%zu], eax\n",
-                    var_assign->offset * 4,
-                    expr->value,
-                    var_assign->offset * 4
-                );
+                if (expr->identifier) {
+                    Variable* var = asmgen_variables_find(&ag->vars, expr->value);
+                    asmgen_gen_div(ag, var_assign->offset * 4, var->offset * 4);
+                } else {
+                    asmgen_gen_divs(ag, var_assign->offset * 4, expr->value);
+                }
             } else {
                 fprintf(stderr, "\"%c\" is not yet implemented for asm generation\n", math_op);
                 exit(1);
             }
         }
-        sb_append(&ag->asm_source, instr_buff, strlen(instr_buff));
     } else {
         if (expr->left->high_expr || (!expr->left->high_expr && !expr->right->high_expr)) {
             asmgen_gen_expr_var(ag, var_assign, expr->left, expr->operation);
