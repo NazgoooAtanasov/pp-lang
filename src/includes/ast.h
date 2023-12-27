@@ -1,6 +1,7 @@
 #ifndef PP_LANG_AST_
 #define PP_LANG_AST_
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@ typedef struct _ast_expression {
   struct _ast_expression* right;
   char value[256];
   char operation;
+  bool high_expr;
 } ast_expression;
 
 typedef enum {
@@ -22,6 +24,8 @@ typedef struct {
     char ident[256];
     ast_expression* value;
     ast_variable_type type;
+    size_t offset;
+    bool assigned; // this is used by the asmgen only to have state if the variable has been initialized.
 } ast_variable_assign;
 
 typedef struct {
@@ -81,6 +85,7 @@ typedef struct _ast_stmt {
 
 typedef struct _ast_block {
     ast_stmt* statements;
+    size_t var_count;
 } ast_block;
 
 typedef struct {

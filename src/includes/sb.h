@@ -15,7 +15,6 @@ void sb_zero(StringBuilder* sb);
 void sb_append(StringBuilder* sb, const char* str, size_t len);
 void sb_free(StringBuilder* sb);
 
-#endif
 
 #ifdef SB_IMPLEMENTATION
 void sb_initialize(StringBuilder* sb, size_t sz) {
@@ -47,4 +46,6 @@ void sb_free(StringBuilder* sb) {
     sb->sz = 0;
     sb->idx = 0;
 }
+#endif
+
 #endif

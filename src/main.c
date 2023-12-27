@@ -9,6 +9,7 @@
 
 #include "includes/lex.h"
 #include "includes/parser.h"
+#include "includes/asmgen.h"
 
 #define SOURCE_FILE "examples/main.pp"
 
@@ -39,8 +40,11 @@ int main(void) {
     parser_create(&parser, lex.tokens, lex.token_size);
     ast_fun_def* fun = parser_parse_z(&parser);
 
-    ast_print_tree(fun, 1);
+    AsmGen generator;
+    asmgen_create(&generator);
+    asmgen_gen_asm(&generator, fun);
 
+    /* ast_print_tree(fun, 1); */
     /* for (size_t i = 0; i < lex.token_size; ++i) { */
     /*     printf("[TOKEN] %s %s\n", get_token_str(lex.tokens[i].type), lex.tokens[i].str_value); */
     /* } */

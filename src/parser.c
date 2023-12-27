@@ -242,9 +242,15 @@ ast_block* parser_parse_block(Parser* parser) {
 
     ast_block* block = malloc(sizeof(ast_block));
     block->statements = NULL;
+    block->var_count = 0;
     ast_stmt* parsed_stmt;
     do {
         parsed_stmt = parser_parse_stmt(parser);
+
+        if (parsed_stmt && parsed_stmt->blockless && parsed_stmt->blockless->variable_assign) {
+            block->var_count++;
+            parsed_stmt->blockless->variable_assign->offset = block->var_count;
+        }
 
         if (block->statements == NULL) {
             block->statements = parsed_stmt;

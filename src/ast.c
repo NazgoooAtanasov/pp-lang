@@ -31,6 +31,10 @@ ast_expression* build_expression_node(const char* expr_str, size_t sz) {
         new_expr->right = build_expression_node(sub_expr, len);
 
         new_expr->operation = expr_str[sign_idx];
+
+        if (new_expr->operation == '*' || new_expr->operation == '/') {
+            new_expr->high_expr = true;
+        }
     } else {
         strcpy(new_expr->value, expr_str);
     }
